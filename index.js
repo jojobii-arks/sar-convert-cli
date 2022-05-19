@@ -1,17 +1,27 @@
 const fsp = require('fs/promises');
 const { createCanvas, loadImage } = require('canvas');
+const [, , filepath] = process.argv;
+const processSarBuffer = require('./sar-parse');
 
-const data = require('./output/io-blush-data.json');
+let data;
+let layers;
 
-const layers = data.layers.reverse();
+fsp
+	.readFile(filepath)
+	.then(buffer => {
+		data = processSarBuffer(buffer);
+	})
+	.then(() => {
+		layers = data.layers.reverse();
+		console.log('layer count', layers.length);
+		renderNext(0);
+	})
+	.catch(err => console.error(err));
 
 const canvas = createCanvas(2000, 1000);
 const ctx = canvas.getContext('2d');
 ctx.antialias = 'subpixel';
 ctx.quality = 'bilinear';
-
-const i = 0;
-console.log(layers.length);
 function renderNext(i) {
 	const layer = layers[i];
 	const corners = [
@@ -44,14 +54,14 @@ function renderNext(i) {
 			console.log('finished');
 			const pngData = canvas.createPNGStream();
 			fsp
-				.writeFile('./output/io-blush.png', pngData)
+				.writeFile('./' + filepath + '.png', pngData)
 				.then(() => console.log('save successful'))
 				.catch(console.error);
 		}
 	});
 }
 
-renderNext(i);
+// renderNext(0);
 
 function render(img, corners, layer) {
 	const canvas = createCanvas(2000, 1000);
