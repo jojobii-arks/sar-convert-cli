@@ -18,10 +18,13 @@ fsp
 	})
 	.catch(err => console.error(err));
 
-const canvas = createCanvas(2000, 1000);
+console.time('operation time');
+
+const canvas = createCanvas(1000, 1000);
 const ctx = canvas.getContext('2d');
 ctx.antialias = 'subpixel';
 ctx.quality = 'bilinear';
+
 function renderNext(i) {
 	const layer = layers[i];
 	const corners = [
@@ -43,10 +46,15 @@ function renderNext(i) {
 		}
 	];
 	const src = `./res/assets/${layer.props.textureIndex + 1}.png`;
+	console.time('load image');
 	loadImage(src).then(img => {
-		console.log('layer index:', i);
-		const tempCanvas = render(img, corners, layer.props);
-		ctx.drawImage(tempCanvas, 0, 0);
+		console.timeEnd('load image');
+		if (layer.props.visible) {
+			console.time('render image');
+			const tempCanvas = render(img, corners, layer.props);
+			console.timeEnd('render image');
+			ctx.drawImage(tempCanvas, 0, 0);
+		}
 		if (i < layers.length - 1) {
 			i++;
 			renderNext(i);
@@ -57,16 +65,15 @@ function renderNext(i) {
 				.writeFile('./' + filepath + '.png', pngData)
 				.then(() => console.log('save successful'))
 				.catch(console.error);
+			console.timeEnd('operation time');
 		}
 	});
 }
 
-// renderNext(0);
-
 function render(img, corners, layer) {
-	const canvas = createCanvas(2000, 1000);
+	const canvas = createCanvas(1000, 1000);
 	const ctx = canvas.getContext('2d');
-	const step = 1;
+	const step = 2;
 	ctx.antialias = 'subpixel';
 	ctx.quality = 'bilinear';
 
@@ -120,7 +127,7 @@ function render(img, corners, layer) {
 	colorB *= 4;
 	transparency = transparency / 7;
 
-	const imageData = ctx.getImageData(0, 0, 1280, 1280);
+	const imageData = ctx.getImageData(0, 0, 1000, 1000);
 	for (let i = 0; i < imageData.data.length; i += 4) {
 		// Modify pixel data
 		imageData.data[i + 0] = colorR; // R value
