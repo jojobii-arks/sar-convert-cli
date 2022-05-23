@@ -5,6 +5,12 @@ const processSarBuffer = require('./sar-parse');
 
 let data;
 let layers;
+const dimensions = {
+	width: 1000,
+	height: 1000
+};
+const resolution = 4;
+const step = 3;
 
 fsp
 	.readFile(filepath)
@@ -20,7 +26,7 @@ fsp
 
 console.time('operation time');
 
-const canvas = createCanvas(1000, 1000);
+const canvas = createCanvas(dimensions.width, dimensions.height);
 const ctx = canvas.getContext('2d');
 ctx.antialias = 'subpixel';
 ctx.quality = 'bilinear';
@@ -29,20 +35,20 @@ function renderNext(i) {
 	const layer = layers[i];
 	const corners = [
 		{
-			x: layer.points.topLeft.x * 4,
-			y: layer.points.topLeft.y * 4
+			x: layer.points.topLeft.x * resolution,
+			y: layer.points.topLeft.y * resolution
 		},
 		{
-			x: layer.points.topRight.x * 4,
-			y: layer.points.topRight.y * 4
+			x: layer.points.topRight.x * resolution,
+			y: layer.points.topRight.y * resolution
 		},
 		{
-			x: layer.points.bottomRight.x * 4,
-			y: layer.points.bottomRight.y * 4
+			x: layer.points.bottomRight.x * resolution,
+			y: layer.points.bottomRight.y * resolution
 		},
 		{
-			x: layer.points.bottomLeft.x * 4,
-			y: layer.points.bottomLeft.y * 4
+			x: layer.points.bottomLeft.x * resolution,
+			y: layer.points.bottomLeft.y * resolution
 		}
 	];
 	const src = `./res/assets/${layer.props.textureIndex + 1}.png`;
@@ -60,7 +66,11 @@ function renderNext(i) {
 			renderNext(i);
 		} else {
 			console.log('finished');
-			const pngData = canvas.createPNGStream();
+			const cropped = ctx.getImageData(126, 317, 767, 384);
+			const tempCanvas = createCanvas(760, 380);
+			const tempctx = tempCanvas.getContext('2d');
+			tempctx.putImageData(cropped, 0, 0);
+			const pngData = tempCanvas.createPNGStream();
 			fsp
 				.writeFile('./' + filepath + '.png', pngData)
 				.then(() => console.log('save successful'))
@@ -71,9 +81,8 @@ function renderNext(i) {
 }
 
 function render(img, corners, layer) {
-	const canvas = createCanvas(1000, 1000);
+	const canvas = createCanvas(dimensions.width, dimensions.height);
 	const ctx = canvas.getContext('2d');
-	const step = 2;
 	ctx.antialias = 'subpixel';
 	ctx.quality = 'bilinear';
 
@@ -127,7 +136,7 @@ function render(img, corners, layer) {
 	colorB *= 4;
 	transparency = transparency / 7;
 
-	const imageData = ctx.getImageData(0, 0, 1000, 1000);
+	const imageData = ctx.getImageData(0, 0, dimensions.width, dimensions.height);
 	for (let i = 0; i < imageData.data.length; i += 4) {
 		// Modify pixel data
 		imageData.data[i + 0] = colorR; // R value
